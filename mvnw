@@ -29,7 +29,8 @@
 # -----------------
 #   MAVEN_OPTS - parameters passed to the Java VM when running Maven
 #     e.g. to debug Maven itself, use
-#       set MAVEN_OPTS=-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000
+#       set MAVEN_OPTS=-Xdebug -Xrunjdwp:transport=dt_socket,serveThe following artifacts could not be resolved: org.codehaus.plexus:plexus-utils:pom:3.0.24 (absent): Could not transfer artifact org.codehaus.plexus:plexus-utils:pom:3.0.24 from/to central (https://repo.maven.apache.org/maven2): Connect to repo.maven.apache.o
+                                                                  #rg:443 [repo.maven.apache.org/146.75.112.215] failed: Connect timed out r=y,suspend=y,address=8000
 #   MAVEN_SKIP_RC - flag to disable loading of mavenrc files
 # ----------------------------------------------------------------------------
 
