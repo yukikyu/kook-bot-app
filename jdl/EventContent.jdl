@@ -1,0 +1,30 @@
+/** 事件内容 */
+entity EventContent(kba_event_content) {
+    /** 事件名 */
+    name String
+
+    /** 事件标题 */
+    title String
+
+    /** 类名 */
+    className String
+
+    /** 元数据 */
+    metadata TextBlob
+
+    /** 创建用户 */
+    createdBy String
+
+    /** 创建时间 */
+    createdDate Instant
+
+    /** 最后修改用户 */
+    lastModifiedBy String
+
+    /** 最后修改时间 */
+    lastModifiedDate Instant
+}
+
+dto * with mapstruct
+service * with serviceClass
+filter *

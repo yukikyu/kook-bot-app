@@ -1,0 +1,58 @@
+{
+  "applications": "*",
+  "changelogDate": "20230621093137",
+  "clientRootFolder": "kook-bot-app",
+  "databaseType": "sql",
+  "dto": "mapstruct",
+  "entityTableName": "kba_event_content",
+  "fields": [
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "javadoc": "事件名"
+    },
+    {
+      "fieldName": "title",
+      "fieldType": "String",
+      "javadoc": "事件标题"
+    },
+    {
+      "fieldName": "className",
+      "fieldType": "String",
+      "javadoc": "类名"
+    },
+    {
+      "fieldName": "metadata",
+      "fieldType": "byte[]",
+      "fieldTypeBlobContent": "text",
+      "javadoc": "元数据"
+    },
+    {
+      "fieldName": "createdBy",
+      "fieldType": "String",
+      "javadoc": "创建用户"
+    },
+    {
+      "fieldName": "createdDate",
+      "fieldType": "Instant",
+      "javadoc": "创建时间"
+    },
+    {
+      "fieldName": "lastModifiedBy",
+      "fieldType": "String",
+      "javadoc": "最后修改用户"
+    },
+    {
+      "fieldName": "lastModifiedDate",
+      "fieldType": "Instant",
+      "javadoc": "最后修改时间"
+    }
+  ],
+  "javadoc": "事件内容",
+  "jpaMetamodelFiltering": true,
+  "microserviceName": "kook-bot-app",
+  "name": "EventContent",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}

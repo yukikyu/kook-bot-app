@@ -4,10 +4,15 @@ import cn.enaium.kookstarter.client.http.DirectMessageService;
 import cn.enaium.kookstarter.client.http.MessageService;
 import cn.enaium.kookstarter.client.http.UserService;
 import cn.enaium.kookstarter.event.Event;
+import cn.hutool.core.util.EnumUtil;
+import com.yukikyu.kook.boot.app.constant.KookEventType;
+import com.yukikyu.kook.boot.app.domain.EventContent;
+import com.yukikyu.kook.boot.app.repository.EventContentRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 /**
  * Kook事件监听
@@ -28,11 +33,22 @@ public class KookListener {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private EventContentRepository eventContentRepository;
+
     @EventListener
-    public void event(Event event) {
-        log.info("事件：{}", event.getClass().getName());
-        log.info("source：{}", event.getSource());
-        log.info("metadata：{}", event.getMetadata());
+    public Mono<EventContent> event(Event event) {
+        EventContent eventContent = new EventContent();
+        String name = event.getClass().getSimpleName();
+        eventContent.setName(name);
+        String title = EnumUtil.getFieldBy(KookEventType::getTitle, KookEventType::getName, name);
+        eventContent.setTitle(title);
+        eventContent.setClassName(event.getClass().getName());
+        String metadata = event.getMetadata().toString();
+        log.info("metadata：{}", metadata);
+        eventContent.setMetadata(metadata);
+        Mono<EventContent> eventContentMono = eventContentRepository.save(eventContent);
+        return eventContentMono;
     }
     /*@EventListener
     public void event(KMarkdownEvent event) throws JsonProcessingException {
