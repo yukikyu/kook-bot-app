@@ -158,7 +158,7 @@ public class KookListener {
         final var author_id = metaData.getByPath("d.extra.body.user_id", String.class);
         // 求助信息
         if (ObjectUtil.equals(KookCommandMatchType.HELP.name(), value)) {
-            List<Channel> joinedChannel = getJoinedChannel(target_id, author_id, 1);
+            List<Channel> joinedChannel = getJoinedChannel(target_id, author_id);
             if (CollectionUtil.isEmpty(joinedChannel)) {
                 return;
             }
@@ -176,7 +176,7 @@ public class KookListener {
             List<UserInfo> userInfoList = JSONUtil.toList(guildUserListJsonArray, UserInfo.class);
 
             // 获取邀请链接
-            Invite invite = createInvite(joinedChannel.get(0).getId());
+            Invite invite = createInvite(joinedChannel.get(0).getId(), 1);
             if (invite == null) {
                 return;
             }
