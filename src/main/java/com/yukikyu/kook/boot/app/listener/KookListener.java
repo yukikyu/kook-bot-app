@@ -246,4 +246,14 @@ public class KookListener {
             return null;
         }
     }
+
+    /**
+     * 创建邀请
+     *
+     * @param channel_id 频道id
+     * @return
+     */
+    private Invite createInvite(String channel_id) {
+        return createInvite(channel_id, null);
+    }
 }
