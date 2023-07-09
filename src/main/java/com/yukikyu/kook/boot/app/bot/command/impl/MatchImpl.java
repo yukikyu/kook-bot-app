@@ -14,9 +14,14 @@ public class MatchImpl implements Match {
 
     @Override
     public boolean execute(KookCommandMatchType kookCommandMatchType, String content) {
-        if (StrUtil.contains(content, "//")) {
-            return true;
-        }
-        return false;
+        final boolean[] flag = { false };
+        kookCommandMatchType
+            .getCommand()
+            .forEach(command -> {
+                if (StrUtil.contains(content, command)) {
+                    flag[0] = true;
+                }
+            });
+        return flag[0];
     }
 }
