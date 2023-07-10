@@ -156,7 +156,19 @@ public enum KookCommandMatchType {
             "]"
         ),
         List.of("//求助", "萌新求助")
-    );
+    ),
+    // 设置帮助频道
+    SET_HELP_CHANNEL_ID("设置帮助频道", null, List.of("//config 帮助频道 ")),
+    // 设置组队频道
+    SET_FORM_A_TEAM_CHANNEL_ID("设置组队频道", null, List.of("//config 组队频道 ")),
+    // 删除帮助频道
+    DEL_HELP_CHANNEL_ID("删除帮助频道", null, List.of("//config delete 帮助频道")),
+    // 删除组队频道
+    DEL_FORM_A_TEAM_CHANNEL_ID("删除组队频道", null, List.of("//config delete 组队频道")),
+    // 获取帮助统计信息
+    GET_HELP_STATISTICS("获取帮助统计信息", null, List.of("//config 帮助统计信息")),
+    // 获取帮助信息
+    GET_HELP("获取帮助信息", null, List.of("//help"));
 
     final String title;
 

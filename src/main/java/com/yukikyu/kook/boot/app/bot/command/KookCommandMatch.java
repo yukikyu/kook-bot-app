@@ -8,6 +8,6 @@ import com.yukikyu.kook.boot.app.constant.KookCommandMatchType;
  * @author: yukikyu
  * @date: 2023-07-08 14:56
  */
-public interface Match {
+public interface KookCommandMatch {
     boolean execute(KookCommandMatchType kookCommandMatchType, String content);
 }

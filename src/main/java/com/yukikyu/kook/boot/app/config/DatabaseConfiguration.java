@@ -1,28 +1,18 @@
 package com.yukikyu.kook.boot.app.config;
 
 import io.r2dbc.spi.ConnectionFactory;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.r2dbc.convert.MappingR2dbcConverter;
 import org.springframework.data.r2dbc.convert.R2dbcCustomConversions;
-import org.springframework.data.r2dbc.core.ReactiveDataAccessStrategy;
 import org.springframework.data.r2dbc.dialect.DialectResolver;
 import org.springframework.data.r2dbc.dialect.R2dbcDialect;
 import org.springframework.data.r2dbc.query.UpdateMapper;
@@ -30,7 +20,6 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.relational.core.dialect.RenderContextFactory;
 import org.springframework.data.relational.core.sql.render.SqlRenderer;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import tech.jhipster.config.JHipsterConstants;
 
 @Configuration
 @EnableR2dbcRepositories({ "com.yukikyu.kook.boot.app.repository" })
@@ -101,7 +90,7 @@ public class DatabaseConfiguration {
         INSTANCE;
 
         public LocalDateTime convert(Instant source) {
-            return LocalDateTime.ofInstant(source, ZoneOffset.UTC);
+            return LocalDateTime.ofInstant(source, ZoneId.of("Asia/Shanghai"));
         }
     }
 
@@ -111,7 +100,7 @@ public class DatabaseConfiguration {
 
         @Override
         public Instant convert(LocalDateTime localDateTime) {
-            return localDateTime.toInstant(ZoneOffset.UTC);
+            return localDateTime.toInstant(ZoneOffset.of("Asia/Shanghai"));
         }
     }
 
@@ -132,7 +121,7 @@ public class DatabaseConfiguration {
         @Override
         public ZonedDateTime convert(LocalDateTime localDateTime) {
             // Be aware - we are using the UTC timezone
-            return ZonedDateTime.of(localDateTime, ZoneOffset.UTC);
+            return ZonedDateTime.of(localDateTime, ZoneId.of("Asia/Shanghai"));
         }
     }
 

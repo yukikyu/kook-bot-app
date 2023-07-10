@@ -1,7 +1,7 @@
 package com.yukikyu.kook.boot.app.bot.command.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.yukikyu.kook.boot.app.bot.command.Match;
+import com.yukikyu.kook.boot.app.bot.command.KookCommandMatch;
 import com.yukikyu.kook.boot.app.constant.KookCommandMatchType;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
  * @date: 2023-07-08 15:00
  */
 @Service
-public class MatchImpl implements Match {
+public class KookCommandMatchImpl implements KookCommandMatch {
 
     @Override
     public boolean execute(KookCommandMatchType kookCommandMatchType, String content) {

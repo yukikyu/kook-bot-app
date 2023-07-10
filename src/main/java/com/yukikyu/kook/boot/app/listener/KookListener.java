@@ -8,16 +8,21 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
-import com.yukikyu.kook.boot.app.bot.command.Match;
+import com.yukikyu.kook.boot.app.bot.command.KookCommandMatch;
+import com.yukikyu.kook.boot.app.constant.HelpLogStatus;
 import com.yukikyu.kook.boot.app.constant.KookBotSettingType;
 import com.yukikyu.kook.boot.app.constant.KookCommandMatchType;
 import com.yukikyu.kook.boot.app.constant.KookMessageType;
 import com.yukikyu.kook.boot.app.domain.Channel;
+import com.yukikyu.kook.boot.app.domain.HelpUserLog;
 import com.yukikyu.kook.boot.app.domain.Invite;
 import com.yukikyu.kook.boot.app.domain.UserInfo;
+import com.yukikyu.kook.boot.app.repository.HelpUserLogRepository;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -51,6 +56,9 @@ public class KookListener {
     private GuildEmojiService guildEmojiService;
 
     @Autowired
+    private ChannelService channelService;
+
+    @Autowired
     private ChannelUserService channelUserService;
 
     @Autowired
@@ -60,13 +68,16 @@ public class KookListener {
     private GuildService guildService;
 
     @Autowired
-    private Match match;
+    private KookCommandMatch kookCommandMatch;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private HelpUserLogRepository helpUserLogRepository;
 
     @EventListener
     public void event(Event event) {
@@ -82,6 +93,50 @@ public class KookListener {
         final var author_id = metaData.getByPath("d.extra.author.id", String.class);
         final var guild_id = metaData.getByPath("d.extra.guild_id", String.class);
 
+        log.info("\n\n\n{}\n\n\n", metaData);
+
+        final var data = JSONUtil.parse(metaData.getByPath("d", String.class));
+        final var type = data.getByPath("channel_type", String.class);
+
+        final var content = data.getByPath("content", String.class);
+        final var bot = data.getByPath("extra.author.bot", boolean.class);
+        log.info("消息内容：{}", data);
+
+        // 帮助频道KEY
+        String HELP_CHANNEL_ID_KEY = guild_id + "::" + KookBotSettingType.HELP_CHANNEL_ID;
+        // 组队频道KEY
+        String FORM_A_TEAM_CHANNEL_ID_KEY = guild_id + "::" + KookBotSettingType.FORM_A_TEAM_CHANNEL_ID;
+
+        // 系统设置
+        if (true) {
+            // 设置帮助频道
+            if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_CHANNEL_ID, content)) {
+                String channel = StrUtil.removeAll(content, KookCommandMatchType.SET_HELP_CHANNEL_ID.getCommand().get(0));
+                stringRedisTemplate.opsForValue().set(HELP_CHANNEL_ID_KEY, channel);
+            }
+            // 设置组队频道
+            else if (kookCommandMatch.execute(KookCommandMatchType.SET_FORM_A_TEAM_CHANNEL_ID, content)) {
+                String channel = StrUtil.removeAll(content, KookCommandMatchType.SET_FORM_A_TEAM_CHANNEL_ID.getCommand().get(0));
+                stringRedisTemplate.opsForValue().set(FORM_A_TEAM_CHANNEL_ID_KEY, channel);
+            }
+            // 删除帮助频道
+            else if (kookCommandMatch.execute(KookCommandMatchType.DEL_HELP_CHANNEL_ID, content)) {
+                stringRedisTemplate.delete(HELP_CHANNEL_ID_KEY);
+            }
+            // 删除组队频道
+            else if (kookCommandMatch.execute(KookCommandMatchType.DEL_FORM_A_TEAM_CHANNEL_ID, content)) {
+                stringRedisTemplate.delete(FORM_A_TEAM_CHANNEL_ID_KEY);
+            }
+            // 获取帮助统计信息
+            else if (kookCommandMatch.execute(KookCommandMatchType.GET_HELP_STATISTICS, content)) {
+                // TODO
+            }
+            // 获取帮助信息
+            else if (kookCommandMatch.execute(KookCommandMatchType.GET_HELP, content)) {
+                // TODO
+            }
+        }
+
         // 用户指定频率（5秒一次）
         if (ObjectUtil.notEqual(author_id, "1")) {
             String key = guild_id + "::" + author_id;
@@ -93,15 +148,6 @@ public class KookListener {
                 return;
             }
         }
-
-        log.info("\n\n\n{}\n\n\n", metaData);
-
-        final var data = JSONUtil.parse(metaData.getByPath("d", String.class));
-        final var type = data.getByPath("channel_type", String.class);
-
-        final var content = data.getByPath("content", String.class);
-        final var bot = data.getByPath("extra.author.bot", boolean.class);
-        log.info("消息内容：{}", data);
 
         //对方是否为机器人
         if (bot) {
@@ -121,7 +167,7 @@ public class KookListener {
             return;
         }
         if (type.equals("PERSON")) {} else if (type.equals("GROUP")) {
-            if (match.execute(KookCommandMatchType.FORM_A_TEAM, content)) {
+            if (kookCommandMatch.execute(KookCommandMatchType.FORM_A_TEAM, content)) {
                 final String channel_id;
                 if (joinedChannel != null) {
                     channel_id = joinedChannel.get(0).getId();
@@ -130,11 +176,9 @@ public class KookListener {
                 }
 
                 // 指定组队频道
-                String formATeamChannelId = stringRedisTemplate
-                    .opsForValue()
-                    .get(guild_id + "::" + KookBotSettingType.FORM_A_TEAM_CHANNEL_ID);
-                if (StrUtil.isEmpty(formATeamChannelId)) {
-                    // 未指定组队频道
+                String formATeamChannelId = stringRedisTemplate.opsForValue().get(FORM_A_TEAM_CHANNEL_ID_KEY);
+                if (StrUtil.isNotEmpty(formATeamChannelId) && ObjectUtil.equals(formATeamChannelId, chat_channel_id)) {
+                    log.info("不是指定组队频道");
                     return;
                 }
 
@@ -163,12 +207,11 @@ public class KookListener {
                     )
                     .doOnSuccess(log::info)
                     .block();
-            } else if (match.execute(KookCommandMatchType.HELP, content)) {
+            } else if (kookCommandMatch.execute(KookCommandMatchType.HELP, content)) {
                 // 指定帮助频道
-                String helpChannelId = stringRedisTemplate.opsForValue().get(guild_id + "::" + KookBotSettingType.HELP_CHANNEL_ID);
-                if (StrUtil.isEmpty(helpChannelId)) {
-                    // 未指定帮助频道
-                    log.info("未指定帮助频道");
+                String helpChannelId = stringRedisTemplate.opsForValue().get(HELP_CHANNEL_ID_KEY);
+                if (StrUtil.isNotEmpty(helpChannelId) && ObjectUtil.equals(helpChannelId, chat_channel_id)) {
+                    log.info("不是指定帮助频道");
                     return;
                 }
 
@@ -215,7 +258,6 @@ public class KookListener {
             }
 
             // 发送求助信息
-            // role_id guild_id
             final var guild_id = metaData.getByPath("d.extra.body.guild_id", String.class);
             // {"code":0,"message":"操作成功","data":{"items":[{"id":"2431192162","username":"雪球丶","nickname":"雪球丶","identify_num":"9841","online":true,"bot":false,"status":1,"banner":"","avatar":"https://img.kookapp.cn/avatars/2022-05/4cdLRdZGbB07y07y.jpg?x-oss-process=style/icon","vip_avatar":"https://img.kookapp.cn/avatars/2022-05/4cdLRdZGbB07y07y.jpg?x-oss-process=style/icon","mobile_verified":true,"joined_at":1686034561000,"active_time":1688900277553,"roles":[23077198],"is_master":true,"abbr":"","color":3447003}],"meta":{"page":1,"page_total":1,"page_size":50,"total":1},"sort":{},"user_count":27,"online_count":1,"offline_count":0}}
             String guildUserListResponse = guildService
@@ -262,7 +304,8 @@ public class KookListener {
                 .postMessageUpdate(Map.of("msg_id", msg_id, "content", KookCommandMatchType.HELP.getContentTemplate().get("WAITING")))
                 .doOnSuccess(log::info)
                 .block();
-            redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId + "::" + user_id, 0);
+            redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId, user_id);
+            redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId + "::FLAG", true);
             redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId + "::MESSAGE_ID_LIST", msg_id_list);
         }
     }
@@ -273,24 +316,77 @@ public class KookListener {
         // {"s":0,"d":{"channel_type":"GROUP","type":255,"target_id":"7363287837020870","author_id":"1","content":"[\u7cfb\u7edf\u6d88\u606f]","extra":{"type":"joined_channel","body":{"user_id":"2431192162","channel_id":"5362986112653973","joined_at":1688916950984}},"msg_id":"4cdea6bb-cf8f-47d3-ad24-56ba88b23947","msg_timestamp":1688916951031,"nonce":"","from_type":1},"extra":{"verifyToken":"4BnfeTACRFDr_mKQ","encryptKey":"Pq2sDV7oq","callbackUrl":""},"sn":2}
         JSON json = JSONUtil.parse(event.getMetadata());
         String channel_id = json.getByPath("d.extra.body.channel_id", String.class);
-        String key = KookCommandMatchType.HELP.name() + "::" + channel_id;
+        String key = KookCommandMatchType.HELP.name() + "::" + channel_id + "::FLAG";
         Object help_channel_flag = redisTemplate.opsForValue().get(key);
-        if (ObjectUtil.isNotNull(help_channel_flag) && (int) help_channel_flag == 0) {
-            // 统计帮助时间 开始 TODO
-            redisTemplate.opsForValue().set(key, 1);
-            // 修改帮助信息
-            // redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId + "::MESSAGE_ID_LIST", msg_id_list);
-            List<String> messageIdList = (List<String>) redisTemplate
-                .opsForValue()
-                .get(KookCommandMatchType.HELP.name() + "::" + channel_id + "::MESSAGE_ID_LIST");
-            messageIdList.forEach(msgId -> {
-                directMessageService
-                    .postDirectMessageUpdate(
-                        Map.of("msg_id", msgId, "content", KookCommandMatchType.HELP.getContentTemplate().get("HELP_MESSAGE"))
-                    )
-                    .doOnSuccess(log::info)
-                    .block();
-            });
+        // 帮助用户加入
+        if (ObjectUtil.isNotNull(help_channel_flag) && (boolean) help_channel_flag) {
+            String userId = stringRedisTemplate.opsForValue().get(KookCommandMatchType.HELP.name() + "::" + channel_id);
+            // 查询该频道人员
+            String getChannelUserListResponse = channelService.getChannelUserList(Map.of("channel_id", channel_id)).block();
+            JSON getChannelUserListResponseJson = JSONUtil.parse(getChannelUserListResponse);
+            JSONArray jsonArray = getChannelUserListResponseJson.getByPath("data", JSONArray.class);
+            List<UserInfo> userInfoList = JSONUtil.toList(jsonArray, UserInfo.class);
+            List<UserInfo> otherUserInfoList = userInfoList.stream().filter(item -> ObjectUtil.notEqual(userId, item.getId())).toList();
+            // 存在其他用户
+            if (CollectionUtil.isNotEmpty(otherUserInfoList)) {
+                String guild_id = json.getByPath("d.target_id", String.class);
+                String help_user_id = json.getByPath("d.extra.body.user_id", String.class);
+                List<HelpUserLog> helpUserLogList = otherUserInfoList
+                    .stream()
+                    .map(item -> {
+                        // 统计帮助时间
+                        HelpUserLog helpUserLog = new HelpUserLog();
+                        helpUserLog.setGuildId(guild_id);
+                        helpUserLog.channelId(channel_id);
+                        helpUserLog.setUserId(userId);
+                        helpUserLog.setHelpUserId(help_user_id);
+                        helpUserLog.setJoinAt(Instant.now());
+                        helpUserLog.setExitAt(Instant.now());
+                        helpUserLog.setStatus(HelpLogStatus.STARTING.name());
+                        return helpUserLog;
+                    })
+                    .toList();
+
+                helpUserLogRepository.saveAll(helpUserLogList).subscribe();
+
+                redisTemplate.opsForValue().set(key, false);
+
+                // 修改帮助信息
+                // redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId + "::MESSAGE_ID_LIST", msg_id_list);
+                List<String> messageIdList = (List<String>) redisTemplate
+                    .opsForValue()
+                    .get(KookCommandMatchType.HELP.name() + "::" + channel_id + "::MESSAGE_ID_LIST");
+                messageIdList.forEach(msgId -> {
+                    directMessageService
+                        .postDirectMessageUpdate(
+                            Map.of("msg_id", msgId, "content", KookCommandMatchType.HELP.getContentTemplate().get("HELP_MESSAGE"))
+                        )
+                        .doOnSuccess(log::info)
+                        .block();
+                });
+            }
+        }
+
+        Optional<List<HelpUserLog>> optionalHelpUserLogList = helpUserLogRepository
+            .findByChannelIdAndStatus(channel_id, HelpLogStatus.STARTING.name())
+            .blockOptional();
+
+        // 不是帮助人
+        if (optionalHelpUserLogList.isPresent()) {
+            Optional<HelpUserLog> firstHelpUserLog = optionalHelpUserLogList.get().stream().findFirst();
+            if (firstHelpUserLog.isPresent()) {
+                String user_id = json.getByPath("d.extra.body.user_id", String.class);
+                HelpUserLog huLog = firstHelpUserLog.get();
+                HelpUserLog helpUserLog = new HelpUserLog();
+                helpUserLog.setChannelId(huLog.getChannelId());
+                helpUserLog.setGuildId(huLog.getGuildId());
+                helpUserLog.setUserId(user_id);
+                helpUserLog.setHelpUserId(huLog.getHelpUserId());
+                helpUserLog.setJoinAt(Instant.now());
+                helpUserLog.setExitAt(Instant.now());
+                helpUserLog.setStatus(HelpLogStatus.STARTING.name());
+                helpUserLogRepository.save(helpUserLog).doOnSuccess(item -> log.info("保存后加入的萌新：{}", item)).blockOptional();
+            }
         }
     }
 
@@ -300,12 +396,60 @@ public class KookListener {
         // {"s":0,"d":{"channel_type":"GROUP","type":255,"target_id":"7363287837020870","author_id":"1","content":"[\u7cfb\u7edf\u6d88\u606f]","extra":{"type":"joined_channel","body":{"user_id":"2431192162","channel_id":"5362986112653973","joined_at":1688916950984}},"msg_id":"4cdea6bb-cf8f-47d3-ad24-56ba88b23947","msg_timestamp":1688916951031,"nonce":"","from_type":1},"extra":{"verifyToken":"4BnfeTACRFDr_mKQ","encryptKey":"Pq2sDV7oq","callbackUrl":""},"sn":2}
         JSON json = JSONUtil.parse(event.getMetadata());
         String channel_id = json.getByPath("d.extra.body.channel_id", String.class);
+        String user_id = json.getByPath("d.extra.body.user_id", String.class);
         String key = KookCommandMatchType.HELP.name() + "::" + channel_id;
-        Object help_channel_flag = redisTemplate.opsForValue().get(key);
-        if (ObjectUtil.isNotNull(help_channel_flag) && (int) help_channel_flag > 0) {
-            // 删除标记
-            redisTemplate.delete(key + "*");
-            // 统计帮助时间 结束 TODO
+        Optional<List<HelpUserLog>> optionalHelpUserLogList = helpUserLogRepository
+            .findByChannelIdAndStatus(channel_id, HelpLogStatus.STARTING.name())
+            .blockOptional();
+
+        // 如果存在开始中的帮助LOG
+        if (optionalHelpUserLogList.isPresent()) {
+            List<HelpUserLog> helpUserLogList = optionalHelpUserLogList.get();
+            // 是否是帮助人
+            Optional<HelpUserLog> helpUserOptionalHelpUserLog = helpUserLogList
+                .stream()
+                .filter(item -> ObjectUtil.equals(item.getHelpUserId(), user_id))
+                .toList()
+                .stream()
+                .findFirst();
+            // 如果是帮助人
+            if (helpUserOptionalHelpUserLog.isPresent()) {
+                // 记录帮助退出
+                HelpUserLog helpUserhelpUserLog = helpUserOptionalHelpUserLog.get();
+                String helpUserId = helpUserhelpUserLog.getHelpUserId();
+                if (helpUserId == null) {
+                    return;
+                }
+
+                helpUserLogRepository.updateStatusAndExitAtByHelpUserId(Instant.now(), HelpLogStatus.ENDED.name(), helpUserId).block();
+
+                // 删除标记
+                redisTemplate.delete(key + "*");
+
+                return;
+            }
+
+            // 是否是求助人
+            Optional<HelpUserLog> userOptionalHelpUserLog = helpUserLogList
+                .stream()
+                .filter(item -> ObjectUtil.equals(item.getUserId(), user_id))
+                .toList()
+                .stream()
+                .findFirst();
+            if (userOptionalHelpUserLog.isPresent()) {
+                HelpUserLog helpUserLog = userOptionalHelpUserLog.get();
+                helpUserLog.setExitAt(Instant.now());
+                helpUserLog.setStatus(HelpLogStatus.ENDED.name());
+                helpUserLogRepository.save(helpUserLog);
+            }
+
+            Optional<List<HelpUserLog>> laterOptionalHelpUserLogList = helpUserLogRepository
+                .findByChannelIdAndStatus(channel_id, HelpLogStatus.STARTING.name())
+                .blockOptional();
+            // 如果不存在正在进行求助LOG
+            if (laterOptionalHelpUserLogList.isEmpty()) {
+                redisTemplate.delete(key + "*");
+            }
         }
     }
 
