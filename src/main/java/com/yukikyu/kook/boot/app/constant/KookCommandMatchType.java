@@ -203,7 +203,7 @@ public enum KookCommandMatchType {
         List.of("//求助", "萌新求助")
     ),
     // 设置帮助角色ID
-    SET_CUSTOM_COMMAND("设置自定义指令", null, List.of("//config 帮助角色 ")),
+    SET_CUSTOM_COMMAND("设置自定义指令", null, List.of("//config command ")),
     // 设置帮助角色ID
     SET_HELP_ROLE_ID("设置帮助角色ID", null, List.of("//config 帮助角色 ")),
     // 设置帮助频道

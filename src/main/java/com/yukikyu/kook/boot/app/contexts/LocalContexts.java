@@ -11,7 +11,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class LocalContexts {
 
+    /**
+     * 当前服务器ID
+     */
     @Getter
     @Setter
     private static String guildId;
+
+    /**
+     * 当前指令
+     */
+    @Getter
+    @Setter
+    private static String command;
 }

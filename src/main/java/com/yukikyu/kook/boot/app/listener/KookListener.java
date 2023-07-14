@@ -149,7 +149,7 @@ public class KookListener {
         if (ObjectUtil.equals(guildInfo.getData().getUserId(), author_id)) {
             // 设置自定义指令
             if (kookCommandMatch.execute(KookCommandMatchType.SET_CUSTOM_COMMAND, content)) {
-                String channel = StrUtil.removeAll(content, KookCommandMatchType.SET_CUSTOM_COMMAND.getCommand().get(0));
+                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -167,7 +167,7 @@ public class KookListener {
             }
             // 设置帮助角色ID
             if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_ROLE_ID, content)) {
-                String channel = StrUtil.removeAll(content, KookCommandMatchType.SET_HELP_ROLE_ID.getCommand().get(0));
+                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -183,7 +183,7 @@ public class KookListener {
             }
             // 设置帮助频道
             if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_CHANNEL_ID, content)) {
-                String channel = StrUtil.removeAll(content, KookCommandMatchType.SET_HELP_CHANNEL_ID.getCommand().get(0));
+                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -193,7 +193,7 @@ public class KookListener {
             }
             // 设置组队频道
             else if (kookCommandMatch.execute(KookCommandMatchType.SET_FORM_A_TEAM_CHANNEL_ID, content)) {
-                String channel = StrUtil.removeAll(content, KookCommandMatchType.SET_FORM_A_TEAM_CHANNEL_ID.getCommand().get(0));
+                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
