@@ -20,11 +20,7 @@ import com.yukikyu.kook.boot.app.constant.KookBotSettingType;
 import com.yukikyu.kook.boot.app.constant.KookCommandMatchType;
 import com.yukikyu.kook.boot.app.constant.KookMessageType;
 import com.yukikyu.kook.boot.app.contexts.LocalContexts;
-import com.yukikyu.kook.boot.app.cron.HelpStatisticsCron;
-import com.yukikyu.kook.boot.app.domain.HelpStatistics;
-import com.yukikyu.kook.boot.app.domain.HelpUserLog;
 import com.yukikyu.kook.boot.app.domain.UserInfo;
-import com.yukikyu.kook.boot.app.domain.criteria.HelpStatisticsCriteria;
 import com.yukikyu.kook.boot.app.domain.obj.Channel;
 import com.yukikyu.kook.boot.app.domain.obj.GuildInfo;
 import com.yukikyu.kook.boot.app.domain.obj.Invite;
@@ -46,7 +42,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
 import tech.jhipster.service.filter.InstantFilter;
 import tech.jhipster.service.filter.StringFilter;
 
@@ -57,7 +52,7 @@ import tech.jhipster.service.filter.StringFilter;
  * @date: 2023-06-19 18:27
  */
 @Slf4j
-@Component
+//@Component
 public class KookListener {
 
     @Autowired
