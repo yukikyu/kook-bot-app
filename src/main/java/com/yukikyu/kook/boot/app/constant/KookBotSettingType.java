@@ -17,7 +17,11 @@ public enum KookBotSettingType {
     /**
      * 组队频道ID
      */
-    FORM_A_TEAM_CHANNEL_ID;
+    FORM_A_TEAM_CHANNEL_ID,
+    /**
+     * 帮助人角色ID
+     */
+    HELP_ROLE_ID;
 
     @Override
     public String toString() {

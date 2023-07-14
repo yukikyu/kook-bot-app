@@ -3,7 +3,6 @@ package com.yukikyu.kook.boot.app.repository;
 import com.yukikyu.kook.boot.app.domain.HelpUserLog;
 import com.yukikyu.kook.boot.app.domain.criteria.HelpUserLogCriteria;
 import java.time.Instant;
-import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
@@ -31,15 +30,17 @@ public interface HelpUserLogRepository extends ReactiveCrudRepository<HelpUserLo
     @Override
     Mono<Void> deleteById(Long id);
 
-    Mono<List<HelpUserLog>> findByChannelIdAndStatus(String channelId, String name);
+    Flux<HelpUserLog> findByChannelIdAndStatus(String channelId, String name);
 
     @Modifying
-    @Query("update HelpUserLog hul set hul.status = :status, hul.exitAt = :exitAt where hul.helpUserId = :helpUserId")
+    @Query("update kb_help_user_log hul set hul.status = :status, hul.exit_at = :exitAt where hul.help_user_id = :helpUserId")
     Mono<Void> updateStatusAndExitAtByHelpUserId(
         @Param("status") String status,
         @Param("exitAt") Instant exitAt,
         @Param("helpUserId") String helpUserId
     );
+
+    Flux<HelpUserLog> findByStatus(String status);
 }
 
 interface HelpUserLogRepositoryInternal {

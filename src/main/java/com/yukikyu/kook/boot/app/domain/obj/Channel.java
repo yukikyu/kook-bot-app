@@ -1,4 +1,4 @@
-package com.yukikyu.kook.boot.app.domain;
+package com.yukikyu.kook.boot.app.domain.obj;
 
 import lombok.Data;
 

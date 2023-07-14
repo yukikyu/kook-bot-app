@@ -1,8 +1,12 @@
 package com.yukikyu.kook.boot.app.bot.command.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.yukikyu.kook.boot.app.bot.command.KookCommandMatch;
 import com.yukikyu.kook.boot.app.constant.KookCommandMatchType;
+import com.yukikyu.kook.boot.app.service.CustomCommandService;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,16 +16,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class KookCommandMatchImpl implements KookCommandMatch {
 
+    @Autowired
+    private CustomCommandService customCommandService;
+
     @Override
     public boolean execute(KookCommandMatchType kookCommandMatchType, String content) {
         final boolean[] flag = { false };
-        kookCommandMatchType
-            .getCommand()
-            .forEach(command -> {
-                if (StrUtil.contains(content, command)) {
-                    flag[0] = true;
-                }
-            });
+        // 匹配自定义指令
+        List<String> commandList = kookCommandMatchType.getCommand();
+        List<String> customCommandList = customCommandService.getCommand(kookCommandMatchType);
+        if (customCommandList != null && CollectionUtil.isNotEmpty(customCommandList)) {
+            commandList.addAll(customCommandList.stream().map(String::valueOf).toList());
+        }
+        commandList.forEach(command -> {
+            if (StrUtil.contains(content, command)) {
+                flag[0] = true;
+            }
+        });
         return flag[0];
     }
 }

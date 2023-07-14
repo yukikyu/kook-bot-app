@@ -1,0 +1,48 @@
+{
+  "applications": "*",
+  "changelogDate": "20230712180358",
+  "clientRootFolder": "kook-bot-app",
+  "databaseType": "sql",
+  "dto": "mapstruct",
+  "entityTableName": "kba_help_statistics",
+  "fields": [
+    {
+      "fieldName": "guildId",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "helpUserId",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "duration",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "month",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "createdBy",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "createdDate",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "lastModifiedBy",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "lastModifiedDate",
+      "fieldType": "Instant"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "microserviceName": "kook-bot-app",
+  "name": "HelpStatistics",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}
