@@ -103,6 +103,5 @@ jhipster:
 
 # application:
 kook:
-  #  token: 1/MTgxNDU=/6Nfw8/C8vmUUGR9480g/Hg==
-  token: 1/MTk5ODg=/TwoUDAtcaMvi4qgc1W7wig==
+  token: 1/MTgxNDU=/6Nfw8/C8vmUUGR9480g/Hg==
   show-sign: true
