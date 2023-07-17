@@ -300,7 +300,77 @@ public enum KookCommandMatchType {
         List.of("//积分查询")
     ),
     // 获取帮助信息
-    GET_HELP("获取帮助信息", null, List.of("//help"));
+    GET_HELP("获取帮助信息", null, List.of("//help")),
+    // 个人积分查询
+    GET_PERSON_POINT(
+        "个人积分查询",
+        Map.of(
+            "个人积分详情",
+            "[\n" +
+            "  {\n" +
+            "    \"type\": \"card\",\n" +
+            "    \"theme\": \"secondary\",\n" +
+            "    \"size\": \"lg\",\n" +
+            "    \"modules\": [\n" +
+            "      {\n" +
+            "        \"type\": \"section\",\n" +
+            "        \"text\": {\n" +
+            "          \"type\": \"kmarkdown\",\n" +
+            "          \"content\": \"亲爱的(met){}(met)您好，这是您的历史积分。\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"type\": \"section\",\n" +
+            "        \"text\": {\n" +
+            "          \"type\": \"paragraph\",\n" +
+            "          \"cols\": 2,\n" +
+            "          \"fields\": [\n" +
+            "            {\n" +
+            "              \"type\": \"kmarkdown\",\n" +
+            "              \"content\": \"**当月积分**\\n{}\"\n" +
+            "            },\n" +
+            "            {\n" +
+            "              \"type\": \"kmarkdown\",\n" +
+            "              \"content\": \"**当月时长**\\n{}\"\n" +
+            "            },\n" +
+            "            {\n" +
+            "              \"type\": \"kmarkdown\",\n" +
+            "              \"content\": \"**上月积分**\\n{}\"\n" +
+            "            },\n" +
+            "            {\n" +
+            "              \"type\": \"kmarkdown\",\n" +
+            "              \"content\": \"**上月时长**\\n{}\"\n" +
+            "            },\n" +
+            "            {\n" +
+            "              \"type\": \"kmarkdown\",\n" +
+            "              \"content\": \"**总时长**\\n{}\"\n" +
+            "            },\n" +
+            "            {\n" +
+            "              \"type\": \"kmarkdown\",\n" +
+            "              \"content\": \"**总积分**\\n{}\"\n" +
+            "            }\n" +
+            "          ]\n" +
+            "        }\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"type\": \"context\",\n" +
+            "        \"elements\": [\n" +
+            "          {\n" +
+            "            \"type\": \"plain-text\",\n" +
+            "            \"content\": \":warning:每月一号刷新上月数值，每天中午12点刷新本月目前数值。\"\n" +
+            "          }\n" +
+            "        ]\n" +
+            "      }\n" +
+            "    ]\n" +
+            "  }\n" +
+            "]"
+        ),
+        List.of("//我的积分")
+    ),
+    // 刷新本月帮助统计
+    REFRESH_HELP_STATISTICS("刷新本月帮助统计", null, List.of("//refresh")),
+    // 刷新上月帮助统计
+    REFRESH_HELP_STATISTICS_LAST_MONTH("刷新上月帮助统计", null, List.of("//relast"));
 
     final String title;
 

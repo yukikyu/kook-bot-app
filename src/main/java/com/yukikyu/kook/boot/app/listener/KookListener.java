@@ -14,13 +14,13 @@ import cn.hutool.json.JSONUtil;
 import com.yukikyu.kook.boot.app.bot.command.KookCommandMatch;
 import com.yukikyu.kook.boot.app.bot.command.btn.BaseBtnParamEntity;
 import com.yukikyu.kook.boot.app.bot.command.btn.HelpBtnParam;
+import com.yukikyu.kook.boot.app.business.HelpStatisticsBusiness;
 import com.yukikyu.kook.boot.app.config.Constants;
 import com.yukikyu.kook.boot.app.constant.HelpLogStatus;
 import com.yukikyu.kook.boot.app.constant.KookBotSettingType;
 import com.yukikyu.kook.boot.app.constant.KookCommandMatchType;
 import com.yukikyu.kook.boot.app.constant.KookMessageType;
 import com.yukikyu.kook.boot.app.contexts.LocalContexts;
-import com.yukikyu.kook.boot.app.cron.HelpStatisticsCron;
 import com.yukikyu.kook.boot.app.domain.HelpStatistics;
 import com.yukikyu.kook.boot.app.domain.HelpUserLog;
 import com.yukikyu.kook.boot.app.domain.UserInfo;
@@ -103,7 +103,7 @@ public class KookListener {
     private HelpStatisticsRepository helpStatisticsRepository;
 
     @Autowired
-    private HelpStatisticsCron helpStatisticsCron;
+    private HelpStatisticsBusiness helpStatisticsBusiness;
 
     @EventListener
     public void event(Event event) {
@@ -268,14 +268,17 @@ public class KookListener {
                     messageRequest.setType(KookMessageType.CARD.getValue());
                     messageRequest.setTargetId(chat_channel_id);
                     messageRequest.setContent("[" + ct + "]");
-                    messageRequest.setTempTargetId(author_id);
                 }
             }
-            // 获取帮助信息
-            else if (kookCommandMatch.execute(KookCommandMatchType.GET_HELP, content)) {} else if (
-                ObjectUtil.equals("//refresh", content)
-            ) {
-                helpStatisticsCron.month();
+            // TODO 获取帮助信息
+            else if (kookCommandMatch.execute(KookCommandMatchType.GET_HELP, content)) {}
+            // 手动刷新统计信息
+            else if (kookCommandMatch.execute(KookCommandMatchType.REFRESH_HELP_STATISTICS, content)) {
+                helpStatisticsBusiness.refresh(LocalDate.now());
+            }
+            // 手动刷新上月统计信息
+            else if (kookCommandMatch.execute(KookCommandMatchType.REFRESH_HELP_STATISTICS, content)) {
+                helpStatisticsBusiness.refresh(LocalDate.now().minusMonths(1));
             }
         }
 
@@ -299,8 +302,8 @@ public class KookListener {
         if (type.equals("PERSON")) {} else if (type.equals("GROUP")) {
             // {"code":0,"message":"操作成功","data":{"items":[{"id":"1635770006169182","guild_id":"7363287837020870","master_id":"2431192162","parent_id":"8097939466864975","user_id":"2431192162","name":"闲聊","topic":"","type":2,"level":200,"slow_mode":0,"last_msg_content":"","last_msg_id":"","has_password":false,"limit_amount":25,"is_category":false,"permission_sync":1,"permission_overwrites":[{"role_id":0,"allow":0,"deny":0}],"permission_users":[]}],"meta":{"page":1,"page_total":1,"page_size":50,"total":1},"sort":{}}}
             List<Channel> joinedChannel = kookChannelUserService.getJoinedChannel(guild_id, author_id);
-            // 组队指令
             String msgId = data.getByPath("msg_id", String.class);
+            // 组队指令
             if (kookCommandMatch.execute(KookCommandMatchType.FORM_A_TEAM, content)) {
                 if (ObjectUtil.isEmpty(joinedChannel)) {
                     return;
@@ -375,6 +378,112 @@ public class KookListener {
                 helpBtnParam.setGuildId(guild_id);
                 stringRedisTemplate.opsForValue().set(btnValue, JSONUtil.parse(helpBtnParam).toJSONString(0));
             }
+            // 个人积分查询
+            else if (kookCommandMatch.execute(KookCommandMatchType.GET_PERSON_POINT, content)) {
+                // 数值
+                String currentMonthPoint = "0";
+                String currentMonthTime = "0";
+                String lastMonthPoint = "0";
+                String lastMonthTime = "0";
+                String totalMonthPoint = "0";
+                String totalMonthTime = "0";
+
+                // 消息内容
+                String messageContent;
+
+                try {
+                    // 查询个人积分
+                    HelpStatisticsCriteria helpStatisticsCriteria = new HelpStatisticsCriteria();
+                    // 帮助人
+                    StringFilter helpUserIdFilter = new StringFilter();
+                    helpUserIdFilter.setEquals(author_id);
+                    helpStatisticsCriteria.setHelpUserId(helpUserIdFilter);
+                    // 服务器
+                    StringFilter guildIdFilter = new StringFilter();
+                    guildIdFilter.setEquals(guild_id);
+                    helpStatisticsCriteria.setGuildId(guildIdFilter);
+
+                    // - 总
+                    List<HelpStatistics> totalMonthHelpStatisticsList = helpStatisticsRepository
+                        .findByCriteria(helpStatisticsCriteria, null)
+                        .collectList()
+                        .block();
+                    if (CollectionUtil.isNotEmpty(totalMonthHelpStatisticsList)) {
+                        int sumDuration = 0;
+                        for (int i = 0; i < totalMonthHelpStatisticsList.size(); i++) {
+                            HelpStatistics helpStatistics = totalMonthHelpStatisticsList.get(i);
+                            sumDuration += helpStatistics.getDuration();
+                        }
+                        totalMonthPoint = String.valueOf(sumDuration / 60 / 30);
+                        totalMonthTime = String.valueOf(sumDuration / 60);
+                    }
+
+                    // 月份(本月)
+                    InstantFilter monthFilter = new InstantFilter();
+                    LocalDate localDate = LocalDate.now();
+                    Instant firstInstant = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant(); // 转换为Instant
+                    monthFilter.setEquals(firstInstant);
+                    helpStatisticsCriteria.setMonth(monthFilter);
+
+                    // - 本月
+                    List<HelpStatistics> currentMonthHelpStatisticsList = helpStatisticsRepository
+                        .findByCriteria(helpStatisticsCriteria, null)
+                        .collectList()
+                        .block();
+                    if (CollectionUtil.isNotEmpty(currentMonthHelpStatisticsList)) {
+                        int sumDuration = 0;
+                        for (int i = 0; i < currentMonthHelpStatisticsList.size(); i++) {
+                            HelpStatistics helpStatistics = currentMonthHelpStatisticsList.get(i);
+                            sumDuration += helpStatistics.getDuration();
+                        }
+                        currentMonthPoint = String.valueOf(sumDuration / 60 / 30);
+                        currentMonthTime = String.valueOf(sumDuration / 60);
+                    }
+
+                    // 月份(上个月)
+                    monthFilter = new InstantFilter();
+                    localDate = LocalDate.now().minusMonths(1);
+                    LocalDate firstDayOfLastMonth = localDate.withDayOfMonth(1); // 获取上个月的第一天
+                    firstInstant = firstDayOfLastMonth.atStartOfDay(ZoneId.systemDefault()).toInstant(); // 转换为Instant
+                    monthFilter.setEquals(firstInstant);
+                    helpStatisticsCriteria.setMonth(monthFilter);
+
+                    // - 上月
+                    List<HelpStatistics> lastMonthHelpStatisticsList = helpStatisticsRepository
+                        .findByCriteria(helpStatisticsCriteria, null)
+                        .collectList()
+                        .block();
+                    if (CollectionUtil.isNotEmpty(lastMonthHelpStatisticsList)) {
+                        int sumDuration = 0;
+                        for (int i = 0; i < lastMonthHelpStatisticsList.size(); i++) {
+                            HelpStatistics helpStatistics = lastMonthHelpStatisticsList.get(i);
+                            sumDuration += helpStatistics.getDuration();
+                        }
+                        lastMonthPoint = String.valueOf(sumDuration / 60 / 30);
+                        lastMonthTime = String.valueOf(sumDuration / 60);
+                    }
+                    messageContent =
+                        StrUtil.format(
+                            KookCommandMatchType.GET_PERSON_POINT.getContentTemplate().get("个人积分详情"),
+                            author_id,
+                            currentMonthPoint,
+                            currentMonthTime,
+                            lastMonthPoint,
+                            lastMonthTime,
+                            totalMonthPoint,
+                            totalMonthTime
+                        );
+                } catch (Exception e) {
+                    messageContent = "系统错误，请联系服务器管理员。";
+                    log.error("个人积分查询错误：{}", e.getMessage());
+                }
+
+                messageRequest = new MessageRequest();
+                messageRequest.setType(KookMessageType.CARD.getValue());
+                messageRequest.setTargetId(chat_channel_id);
+                messageRequest.setQuote(msgId);
+                messageRequest.setContent(messageContent);
+            }
         }
 
         // 发送消息
@@ -382,28 +491,6 @@ public class KookListener {
             Map<String, Object> stringObjectMap = BeanUtil.beanToMap(messageRequest, true, true);
             messageService.postMessageCreate(stringObjectMap).doOnSuccess(log::info).block();
         }
-    }
-
-    /**
-     * 处理排名用户
-     *
-     * @param helpUserIdList
-     * @return
-     */
-    private static List<String> handleRankUser(List<String> helpUserIdList) {
-        AtomicInteger flag = new AtomicInteger();
-        return helpUserIdList
-            .stream()
-            .map(helpUserId -> {
-                String met = "(met)" + helpUserId + "(met)";
-                if (flag.get() <= 2) {
-                    String emoji = Constants.EMOJIS[flag.get()];
-                    flag.getAndAdd(1);
-                    return StrUtil.addPrefixIfNot(met, emoji);
-                }
-                return met;
-            })
-            .collect(Collectors.toList());
     }
 
     @EventListener
@@ -659,6 +746,31 @@ public class KookListener {
                 redisTemplate.delete(key + "*");
             }
         }
+    }
+
+    /**
+     * 处理排名用户
+     *
+     * @param helpUserIdList
+     * @return
+     */
+    private static List<String> handleRankUser(List<String> helpUserIdList) {
+        AtomicInteger flag = new AtomicInteger();
+        return helpUserIdList
+            .stream()
+            .map(helpUserId -> {
+                String met = "(met)" + helpUserId + "(met)";
+                if (flag.get() <= 2) {
+                    String emoji = Constants.EMOJIS[flag.get()];
+                    flag.getAndAdd(1);
+                    return StrUtil.addPrefixIfNot(met, emoji);
+                } else {
+                    String s = StrUtil.addPrefixIfNot(met, flag.get() + 1 + "\u20E3");
+                    flag.getAndAdd(1);
+                    return s;
+                }
+            })
+            .collect(Collectors.toList());
     }
 
     /**
