@@ -350,23 +350,23 @@ public class KookListener {
                 Set<Object> members = redisTemplate.opsForSet().members(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY);
 
                 if (CollectionUtil.isNotEmpty(members)) {
-                    messageRequestList =
-                        members
-                            .stream()
-                            .map(member -> {
-                                MessageRequest messageRequest = new MessageRequest();
-                                messageRequest.setType(KookMessageType.CARD.getValue());
-                                messageRequest.setTargetId(String.valueOf(member));
-                                messageRequest.setContent(
-                                    StrUtil.format(
-                                        KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
-                                        invite.getUrlCode(),
-                                        formATeamChannelId
-                                    )
-                                );
-                                return messageRequest;
-                            })
-                            .toList();
+                    List<MessageRequest> newMessageRequestList = members
+                        .stream()
+                        .map(member -> {
+                            MessageRequest messageRequest = new MessageRequest();
+                            messageRequest.setType(KookMessageType.CARD.getValue());
+                            messageRequest.setTargetId(String.valueOf(member));
+                            messageRequest.setContent(
+                                StrUtil.format(
+                                    KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
+                                    invite.getUrlCode(),
+                                    formATeamChannelId
+                                )
+                            );
+                            return messageRequest;
+                        })
+                        .toList();
+                    messageRequestList.addAll(newMessageRequestList);
                 }
                 MessageRequest messageRequest = new MessageRequest();
                 messageRequest.setType(KookMessageType.CARD.getValue());
