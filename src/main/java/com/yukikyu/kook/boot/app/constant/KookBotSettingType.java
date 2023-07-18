@@ -21,6 +21,10 @@ public enum KookBotSettingType {
     /**
      * 帮助人角色ID
      */
+    FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID,
+    /**
+     * 帮助人角色ID
+     */
     HELP_ROLE_ID;
 
     @Override

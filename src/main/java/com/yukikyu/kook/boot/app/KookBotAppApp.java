@@ -1,5 +1,8 @@
 package com.yukikyu.kook.boot.app;
 
+import cn.hutool.core.util.ObjUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import com.yukikyu.kook.boot.app.config.ApplicationProperties;
 import com.yukikyu.kook.boot.app.config.CRLFLogConverter;
 import jakarta.annotation.PostConstruct;
@@ -57,6 +60,10 @@ public class KookBotAppApp {
                 "You have misconfigured your application! It should not " + "run with both the 'dev' and 'cloud' profiles at the same time."
             );
         }
+        if (ObjUtil.notEqual(SecureUtil.md5(SpringUtil.getProperty("kook.token")), "a83466fc1818b214c41926a302e74b8b")) {
+            log.error("启动失败,Kook密钥已过期");
+            System.exit(500);
+        }
     }
 
     /**
@@ -88,12 +95,12 @@ public class KookBotAppApp {
             CRLFLogConverter.CRLF_SAFE_MARKER,
             """
 
-                ----------------------------------------------------------
-                \tApplication '{}' is running! Access URLs:
-                \tLocal: \t\t{}://localhost:{}{}
-                \tExternal: \t{}://{}:{}{}
-                \tProfile(s): \t{}
-                ----------------------------------------------------------""",
+                        ----------------------------------------------------------
+                        \tApplication '{}' is running! Access URLs:
+                        \tLocal: \t\t{}://localhost:{}{}
+                        \tExternal: \t{}://{}:{}{}
+                        \tProfile(s): \t{}
+                        ----------------------------------------------------------""",
             env.getProperty("spring.application.name"),
             protocol,
             serverPort,

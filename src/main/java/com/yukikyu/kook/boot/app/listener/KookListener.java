@@ -25,6 +25,7 @@ import com.yukikyu.kook.boot.app.domain.HelpStatistics;
 import com.yukikyu.kook.boot.app.domain.HelpUserLog;
 import com.yukikyu.kook.boot.app.domain.UserInfo;
 import com.yukikyu.kook.boot.app.domain.criteria.HelpStatisticsCriteria;
+import com.yukikyu.kook.boot.app.domain.factory.MessageRequestFactory;
 import com.yukikyu.kook.boot.app.domain.obj.Channel;
 import com.yukikyu.kook.boot.app.domain.obj.GuildInfo;
 import com.yukikyu.kook.boot.app.domain.obj.Invite;
@@ -129,17 +130,21 @@ public class KookListener {
         final var content = data.getByPath("content", String.class);
         final var bot = data.getByPath("extra.author.bot", boolean.class);
         final var chat_channel_id = data.getByPath("target_id", String.class);
+        final var msgId = data.getByPath("msg_id", String.class);
+
         log.info("消息内容：{}", data);
 
         // 帮助频道KEY
         String HELP_CHANNEL_ID_KEY = guild_id + "::" + KookBotSettingType.HELP_CHANNEL_ID.name();
         // 组队频道KEY
         String FORM_A_TEAM_CHANNEL_ID_KEY = guild_id + "::" + KookBotSettingType.FORM_A_TEAM_CHANNEL_ID.name();
+        // 组队统一通知频道KEY
+        String FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY = guild_id + "::" + KookBotSettingType.FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID.name();
         // 帮助角色IDKEY
         String HELP_ROLE_ID_KEY = guild_id + "::" + KookBotSettingType.HELP_ROLE_ID.name();
 
         // 回复
-        MessageRequest messageRequest = null;
+        List<MessageRequest> messageRequestList = new ArrayList<>();
 
         String guildViewBlock = guildService.getGuildView(Map.of("guild_id", guild_id)).doOnSuccess(log::info).block();
 
@@ -161,9 +166,10 @@ public class KookListener {
                 String[] commands = split[1].split(",");
                 redisTemplate.opsForSet().add(guild_id + "::COMMAND::" + split[0], commands);
                 // 设置成功
-                messageRequest = new MessageRequest();
+                MessageRequest messageRequest = new MessageRequest();
                 messageRequest.setContent("设置成功");
                 messageRequest.setTempTargetId(author_id);
+                messageRequestList.add(messageRequest);
             }
             // 设置帮助角色ID
             if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_ROLE_ID, content)) {
@@ -177,9 +183,7 @@ public class KookListener {
                 redisTemplate.delete(HELP_ROLE_ID_KEY);
                 redisTemplate.opsForSet().add(HELP_ROLE_ID_KEY, helpRoleIds);
                 // 设置成功
-                messageRequest = new MessageRequest();
-                messageRequest.setContent("设置成功");
-                messageRequest.setTempTargetId(author_id);
+                messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
             }
             // 设置帮助频道
             if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_CHANNEL_ID, content)) {
@@ -187,9 +191,9 @@ public class KookListener {
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
-                // 频道不存在 TODO
                 stringRedisTemplate.opsForValue().set(HELP_CHANNEL_ID_KEY, channel);
-                // 设置成功 TODO
+                // 设置成功
+                messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
             }
             // 设置组队频道
             else if (kookCommandMatch.execute(KookCommandMatchType.SET_FORM_A_TEAM_CHANNEL_ID, content)) {
@@ -198,17 +202,30 @@ public class KookListener {
                     return;
                 }
                 stringRedisTemplate.opsForValue().set(FORM_A_TEAM_CHANNEL_ID_KEY, channel);
-                // 设置成功 TODO
+                // 设置成功
+                messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
+            }
+            // 设置组队统一通知频道
+            else if (kookCommandMatch.execute(KookCommandMatchType.SET_FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID, content)) {
+                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
+                if (StrUtil.isBlank(channel)) {
+                    return;
+                }
+                stringRedisTemplate.opsForSet().add(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY, channel.split(","));
+                // 设置成功
+                messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
             }
             // 删除帮助频道
             else if (kookCommandMatch.execute(KookCommandMatchType.DEL_HELP_CHANNEL_ID, content)) {
                 stringRedisTemplate.delete(HELP_CHANNEL_ID_KEY);
-                // 删除成功 TODO
+                // 设置成功
+                messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
             }
             // 删除组队频道
             else if (kookCommandMatch.execute(KookCommandMatchType.DEL_FORM_A_TEAM_CHANNEL_ID, content)) {
                 stringRedisTemplate.delete(FORM_A_TEAM_CHANNEL_ID_KEY);
-                // 删除成功 TODO
+                // 设置成功
+                messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
             }
             // 获取帮助统计信息
             else if (kookCommandMatch.execute(KookCommandMatchType.GET_HELP_STATISTICS, content)) {
@@ -264,10 +281,11 @@ public class KookListener {
                     }
                 }
                 if (ct != null) {
-                    messageRequest = new MessageRequest();
+                    MessageRequest messageRequest = new MessageRequest();
                     messageRequest.setType(KookMessageType.CARD.getValue());
                     messageRequest.setTargetId(chat_channel_id);
                     messageRequest.setContent("[" + ct + "]");
+                    messageRequestList.add(messageRequest);
                 }
             }
             // TODO 获取帮助信息
@@ -302,7 +320,6 @@ public class KookListener {
         if (type.equals("PERSON")) {} else if (type.equals("GROUP")) {
             // {"code":0,"message":"操作成功","data":{"items":[{"id":"1635770006169182","guild_id":"7363287837020870","master_id":"2431192162","parent_id":"8097939466864975","user_id":"2431192162","name":"闲聊","topic":"","type":2,"level":200,"slow_mode":0,"last_msg_content":"","last_msg_id":"","has_password":false,"limit_amount":25,"is_category":false,"permission_sync":1,"permission_overwrites":[{"role_id":0,"allow":0,"deny":0}],"permission_users":[]}],"meta":{"page":1,"page_total":1,"page_size":50,"total":1},"sort":{}}}
             List<Channel> joinedChannel = kookChannelUserService.getJoinedChannel(guild_id, author_id);
-            String msgId = data.getByPath("msg_id", String.class);
             // 组队指令
             if (kookCommandMatch.execute(KookCommandMatchType.FORM_A_TEAM, content)) {
                 if (ObjectUtil.isEmpty(joinedChannel)) {
@@ -317,7 +334,7 @@ public class KookListener {
 
                 // 指定组队频道
                 String formATeamChannelId = stringRedisTemplate.opsForValue().get(FORM_A_TEAM_CHANNEL_ID_KEY);
-                if (StrUtil.isNotEmpty(formATeamChannelId) && ObjectUtil.equals(formATeamChannelId, chat_channel_id)) {
+                if (StrUtil.isNotEmpty(formATeamChannelId) && ObjectUtil.notEqual(formATeamChannelId, chat_channel_id)) {
                     log.info("不是指定组队频道");
                     return;
                 }
@@ -329,17 +346,42 @@ public class KookListener {
                 }
                 // {"s":0,"d":{"channel_type":"GROUP","type":9,"target_id":"3163216254858192","author_id":"2431192162","content":"333","extra":{"type":9,"code":"","guild_id":"7363287837020870","channel_name":"\u6d4b\u8bd5","author":{"id":"2431192162","username":"\u96ea\u7403\u4e36","identify_num":"9841","online":true,"os":"Websocket","status":1,"avatar":"https:\/\/img.kookapp.cn\/avatars\/2022-05\/4cdLRdZGbB07y07y.jpg?x-oss-process=style\/icon","vip_avatar":"https:\/\/img.kookapp.cn\/avatars\/2022-05\/4cdLRdZGbB07y07y.jpg?x-oss-process=style\/icon","banner.txt":"","nickname":"\u96ea\u7403\u4e36","roles":[],"is_vip":false,"is_ai_reduce_noise":true,"is_personal_card_bg":false,"bot":false,"decorations_id_map":null,"is_sys":false},"visible_only":null,"mention":[],"mention_all":false,"mention_roles":[],"mention_here":false,"nav_channels":[],"kmarkdown":{"raw_content":"333","mention_part":[],"mention_role_part":[],"channel_part":[]},"emoji":[],"last_msg_content":"\u96ea\u7403\u4e36\uff1a333","send_msg_device":1},"msg_id":"c285800b-e782-42b0-89cb-854208130b6f","msg_timestamp":1687969072819,"nonce":"2dJSaKesSdC1VtwSICzNvTi1","from_type":1},"extra":{"verifyToken":"4BnfeTACRFDr_mKQ","encryptKey":"Pq2sDV7oq","callbackUrl":""},"sn":1}
 
-                messageRequest = new MessageRequest();
-                messageRequest.setType(KookMessageType.CARD.getValue());
-                messageRequest.setTargetId(chat_channel_id);
-                messageRequest.setContent(
-                    StrUtil.format(
-                        KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
-                        invite.getUrlCode(),
-                        formATeamChannelId
-                    )
-                );
-                messageRequest.setQuote(msgId);
+                // 通知频道
+                Set<Object> members = redisTemplate.opsForSet().members(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY);
+
+                if (CollectionUtil.isNotEmpty(members)) {
+                    messageRequestList =
+                        members
+                            .stream()
+                            .map(member -> {
+                                MessageRequest messageRequest = new MessageRequest();
+                                messageRequest.setType(KookMessageType.CARD.getValue());
+                                messageRequest.setTargetId(String.valueOf(member));
+                                messageRequest.setContent(
+                                    StrUtil.format(
+                                        KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
+                                        invite.getUrlCode(),
+                                        formATeamChannelId
+                                    )
+                                );
+                                messageRequest.setQuote(msgId);
+                                return messageRequest;
+                            })
+                            .toList();
+                } else {
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.CARD.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setContent(
+                        StrUtil.format(
+                            KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
+                            invite.getUrlCode(),
+                            formATeamChannelId
+                        )
+                    );
+                    messageRequest.setQuote(msgId);
+                    messageRequestList.add(messageRequest);
+                }
             }
             // 帮助指令
             else if (kookCommandMatch.execute(KookCommandMatchType.HELP, content)) {
@@ -348,7 +390,7 @@ public class KookListener {
                 }
                 // 指定帮助频道
                 String helpChannelId = stringRedisTemplate.opsForValue().get(HELP_CHANNEL_ID_KEY);
-                if (StrUtil.isNotEmpty(helpChannelId) && ObjectUtil.equals(helpChannelId, chat_channel_id)) {
+                if (StrUtil.isNotEmpty(helpChannelId) && ObjectUtil.notEqual(helpChannelId, chat_channel_id)) {
                     log.info("不是指定帮助频道");
                     return;
                 }
@@ -359,7 +401,7 @@ public class KookListener {
                     return;
                 }
 
-                messageRequest = new MessageRequest();
+                MessageRequest messageRequest = new MessageRequest();
                 messageRequest.setType(KookMessageType.CARD.getValue());
                 messageRequest.setTargetId(chat_channel_id);
                 String btnValue = guild_id + "::BTN::" + IdUtil.getSnowflake().nextIdStr();
@@ -371,6 +413,7 @@ public class KookListener {
                     )
                 );
                 messageRequest.setQuote(msgId);
+                messageRequestList.add(messageRequest);
 
                 HelpBtnParam helpBtnParam = new HelpBtnParam();
                 helpBtnParam.setAuthorId(author_id);
@@ -478,18 +521,21 @@ public class KookListener {
                     log.error("个人积分查询错误：{}", e.getMessage());
                 }
 
-                messageRequest = new MessageRequest();
+                MessageRequest messageRequest = new MessageRequest();
                 messageRequest.setType(KookMessageType.CARD.getValue());
                 messageRequest.setTargetId(chat_channel_id);
                 messageRequest.setQuote(msgId);
                 messageRequest.setContent(messageContent);
+                messageRequestList.add(messageRequest);
             }
         }
 
         // 发送消息
-        if (ObjectUtil.isNotNull(messageRequest)) {
-            Map<String, Object> stringObjectMap = BeanUtil.beanToMap(messageRequest, true, true);
-            messageService.postMessageCreate(stringObjectMap).doOnSuccess(log::info).block();
+        if (CollectionUtil.isNotEmpty(messageRequestList)) {
+            messageRequestList.forEach(messageRequest -> {
+                Map<String, Object> stringObjectMap = BeanUtil.beanToMap(messageRequest, true, true);
+                messageService.postMessageCreate(stringObjectMap).doOnSuccess(log::info).block();
+            });
         }
     }
 

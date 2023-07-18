@@ -333,8 +333,16 @@
         <defaultGoal>spring-boot:run</defaultGoal>
         <plugins>
             <plugin>
+                <groupId>org.graalvm.buildtools</groupId>
+                <artifactId>native-maven-plugin</artifactId>
+                <version>0.9.23</version>
+            </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.yukikyu.kook.boot.app.KookBotAppApp</mainClass>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>

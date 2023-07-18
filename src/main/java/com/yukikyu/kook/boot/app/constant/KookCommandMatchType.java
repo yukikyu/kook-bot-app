@@ -37,7 +37,7 @@ public enum KookCommandMatchType {
             "        \"elements\": [\n" +
             "          {\n" +
             "            \"type\": \"kmarkdown\",\n" +
-            "            \"content\": \"在(chn){}(chn)发送组队信息，机器人会自动识别，并帮你发送邀请，无需复制链接。\"\n" +
+            "            \"content\": \"在 (chn){}(chn) 发送组队信息，机器人会自动识别，并帮你发送邀请，无需复制链接。\"\n" +
             "          }\n" +
             "        ]\n" +
             "      }\n" +
@@ -87,7 +87,7 @@ public enum KookCommandMatchType {
             "        \"elements\": [\n" +
             "          {\n" +
             "            \"type\": \"kmarkdown\",\n" +
-            "            \"content\": \"在(chn){}(chn)发送求助信息，机器人会自动识别，点击求助按钮后将自动帮你推送给萌新导师，无需复制连接，只需在语音房间内等待萌新导师的到来！\"\n" +
+            "            \"content\": \"在 (chn){}(chn) 发送求助信息，机器人会自动识别，点击求助按钮后将自动帮你推送给萌新导师，无需复制连接，只需在语音房间内等待萌新导师的到来！\"\n" +
             "          }\n" +
             "        ]\n" +
             "      }\n" +
@@ -129,7 +129,7 @@ public enum KookCommandMatchType {
             "        \"elements\": [\n" +
             "          {\n" +
             "            \"type\": \"kmarkdown\",\n" +
-            "            \"content\": \"在(chn){}(chn)发送求助信息，机器人会自动识别，点击求助按钮后将自动帮你推送给萌新导师，无需复制连接，只需在语音房间内等待萌新导师的到来！\"\n" +
+            "            \"content\": \"在 (chn){}(chn) 发送求助信息，机器人会自动识别，点击求助按钮后将自动帮你推送给萌新导师，无需复制连接，只需在语音房间内等待萌新导师的到来！\"\n" +
             "          }\n" +
             "        ]\n" +
             "      }\n" +
@@ -171,7 +171,7 @@ public enum KookCommandMatchType {
             "        \"elements\": [\n" +
             "          {\n" +
             "            \"type\": \"kmarkdown\",\n" +
-            "            \"content\": \"在(chn){}(chn)发送求助信息，机器人会自动识别，点击求助按钮后将自动帮你推送给萌新导师，无需复制连接，只需在语音房间内等待萌新导师的到来！\"\n" +
+            "            \"content\": \"在 (chn){}(chn) 发送求助信息，机器人会自动识别，点击求助按钮后将自动帮你推送给萌新导师，无需复制连接，只需在语音房间内等待萌新导师的到来！\"\n" +
             "          }\n" +
             "        ]\n" +
             "      }\n" +
@@ -189,7 +189,7 @@ public enum KookCommandMatchType {
             "        \"type\": \"section\",\n" +
             "        \"text\": {\n" +
             "          \"type\": \"kmarkdown\",\n" +
-            "          \"content\": \"**萌新(met){}(met)向你求助~**\"\n" +
+            "          \"content\": \"**萌新 (met){}(met) 向你求助~**\"\n" +
             "        }\n" +
             "      },\n" +
             "      {\n" +
@@ -210,6 +210,8 @@ public enum KookCommandMatchType {
     SET_HELP_CHANNEL_ID("设置帮助频道", null, List.of("//config 帮助频道 ")),
     // 设置组队频道
     SET_FORM_A_TEAM_CHANNEL_ID("设置组队频道", null, List.of("//config 组队频道 ")),
+    // 设置组队统一通知频道
+    SET_FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID("设置组队统一通知频道", null, List.of("//config tnotify ")),
     // 删除帮助频道
     DEL_HELP_CHANNEL_ID("删除帮助频道", null, List.of("//config delete 帮助频道")),
     // 删除组队频道
@@ -316,7 +318,7 @@ public enum KookCommandMatchType {
             "        \"type\": \"section\",\n" +
             "        \"text\": {\n" +
             "          \"type\": \"kmarkdown\",\n" +
-            "          \"content\": \"亲爱的(met){}(met)您好，这是您的历史积分。\"\n" +
+            "          \"content\": \"亲爱的 (met){}(met) 您好，这是您的历史积分。\"\n" +
             "        }\n" +
             "      },\n" +
             "      {\n" +
