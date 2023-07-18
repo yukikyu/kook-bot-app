@@ -211,7 +211,7 @@ public class KookListener {
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
-                stringRedisTemplate.opsForSet().add(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY, channel.split(","));
+                redisTemplate.opsForSet().add(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY, channel.split(","));
                 // 设置成功
                 messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
             }
@@ -364,24 +364,22 @@ public class KookListener {
                                         formATeamChannelId
                                     )
                                 );
-                                messageRequest.setQuote(msgId);
                                 return messageRequest;
                             })
                             .toList();
-                } else {
-                    MessageRequest messageRequest = new MessageRequest();
-                    messageRequest.setType(KookMessageType.CARD.getValue());
-                    messageRequest.setTargetId(chat_channel_id);
-                    messageRequest.setContent(
-                        StrUtil.format(
-                            KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
-                            invite.getUrlCode(),
-                            formATeamChannelId
-                        )
-                    );
-                    messageRequest.setQuote(msgId);
-                    messageRequestList.add(messageRequest);
                 }
+                MessageRequest messageRequest = new MessageRequest();
+                messageRequest.setType(KookMessageType.CARD.getValue());
+                messageRequest.setTargetId(chat_channel_id);
+                messageRequest.setContent(
+                    StrUtil.format(
+                        KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
+                        invite.getUrlCode(),
+                        formATeamChannelId
+                    )
+                );
+                messageRequest.setQuote(msgId);
+                messageRequestList.add(messageRequest);
             }
             // 帮助指令
             else if (kookCommandMatch.execute(KookCommandMatchType.HELP, content)) {
