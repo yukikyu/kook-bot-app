@@ -27,11 +27,27 @@ public enum KookCommandMatchType {
             "      {\n" +
             "        \"type\": \"section\",\n" +
             "        \"text\": {\n" +
-            "          \"type\": \"plain-text\",\n" +
-            "          \"content\": \"社区成员正在寻找队友~\"\n" +
+            "          \"type\": \"kmarkdown\",\n" +
+            "          \"content\": \" (met){}(met) 正在寻找队友~\"\n" +
             "        }\n" +
             "      },\n" +
-            "      { \"type\": \"invite\", \"code\": \"{}\" },\n" +
+            "      {\n" +
+            "        \"type\": \"divider\"\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"type\": \"section\",\n" +
+            "        \"text\": {\n" +
+            "          \"type\": \"kmarkdown\",\n" +
+            "          \"content\": \"{}\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"type\": \"divider\"\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"type\": \"invite\",\n" +
+            "        \"code\": \"{}\"\n" +
+            "      },\n" +
             "      {\n" +
             "        \"type\": \"context\",\n" +
             "        \"elements\": [\n" +

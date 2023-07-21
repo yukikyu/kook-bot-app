@@ -19,6 +19,13 @@ public class LocalContexts {
     private static String guildId;
 
     /**
+     * 频道ID
+     */
+    @Getter
+    @Setter
+    private static String chatChannelId;
+
+    /**
      * 当前指令
      */
     @Getter

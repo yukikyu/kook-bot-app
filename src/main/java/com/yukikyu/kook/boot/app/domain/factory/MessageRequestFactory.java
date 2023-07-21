@@ -1,6 +1,7 @@
 package com.yukikyu.kook.boot.app.domain.factory;
 
 import com.yukikyu.kook.boot.app.constant.KookMessageType;
+import com.yukikyu.kook.boot.app.contexts.LocalContexts;
 import com.yukikyu.kook.boot.app.domain.obj.MessageRequest;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ public class MessageRequestFactory {
      */
     public static MessageRequest success(String quote, String tempTargetId) {
         MessageRequest messageRequest = new MessageRequest();
+        messageRequest.setTargetId(LocalContexts.getChatChannelId());
         messageRequest.setContent("成功");
         messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
         messageRequest.setQuote(quote);

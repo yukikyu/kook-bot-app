@@ -131,7 +131,7 @@ public class KookListener {
         final var bot = data.getByPath("extra.author.bot", boolean.class);
         final var chat_channel_id = data.getByPath("target_id", String.class);
         final var msgId = data.getByPath("msg_id", String.class);
-
+        LocalContexts.setChatChannelId(chat_channel_id);
         log.info("消息内容：{}", data);
 
         // 帮助频道KEY
@@ -164,7 +164,10 @@ public class KookListener {
                     return;
                 }
                 String[] commands = split[1].split(",");
-                redisTemplate.opsForSet().add(guild_id + "::COMMAND::" + split[0], commands);
+
+                String key = guild_id + "::COMMAND::" + split[0];
+                redisTemplate.delete(key);
+                redisTemplate.opsForSet().add(key, commands);
                 // 设置成功
                 MessageRequest messageRequest = new MessageRequest();
                 messageRequest.setContent("设置成功");
@@ -211,6 +214,7 @@ public class KookListener {
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
+                redisTemplate.delete(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY);
                 redisTemplate.opsForSet().add(FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID_KEY, channel.split(","));
                 // 设置成功
                 messageRequestList.add(MessageRequestFactory.success(msgId, author_id));
@@ -335,6 +339,17 @@ public class KookListener {
                 // 指定组队频道
                 String formATeamChannelId = stringRedisTemplate.opsForValue().get(FORM_A_TEAM_CHANNEL_ID_KEY);
                 if (StrUtil.isNotEmpty(formATeamChannelId) && ObjectUtil.notEqual(formATeamChannelId, chat_channel_id)) {
+                    String messageContent = StrUtil.format(
+                        "(met){}(met)，该频道不是指定组队频道，请移步至 (chn){}(chn) 频道发送组队信息。",
+                        author_id,
+                        formATeamChannelId
+                    );
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
                     log.info("不是指定组队频道");
                     return;
                 }
@@ -359,6 +374,8 @@ public class KookListener {
                             messageRequest.setContent(
                                 StrUtil.format(
                                     KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
+                                    author_id,
+                                    content,
                                     invite.getUrlCode(),
                                     formATeamChannelId
                                 )
@@ -374,6 +391,8 @@ public class KookListener {
                 messageRequest.setContent(
                     StrUtil.format(
                         KookCommandMatchType.FORM_A_TEAM.getContentTemplate().get("DEFAULT"),
+                        author_id,
+                        content,
                         invite.getUrlCode(),
                         formATeamChannelId
                     )
@@ -389,12 +408,30 @@ public class KookListener {
                 // 指定帮助频道
                 String helpChannelId = stringRedisTemplate.opsForValue().get(HELP_CHANNEL_ID_KEY);
                 if (StrUtil.isNotEmpty(helpChannelId) && ObjectUtil.notEqual(helpChannelId, chat_channel_id)) {
+                    String messageContent = StrUtil.format(
+                        "(met){}(met)，该频道不是指定求助频道，请移步至 (chn){}(chn) 频道发送求助信息。",
+                        author_id,
+                        helpChannelId
+                    );
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
                     log.info("不是指定帮助频道");
                     return;
                 }
 
                 // 必须在语音频道
                 if (joinedChannel == null) {
+                    String messageContent = StrUtil.format("(met){}(met)，未加入语音频道，该求助未生效，请加入语音频道后重试。", author_id);
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
                     log.info("未加入语音频道");
                     return;
                 }
@@ -636,6 +673,7 @@ public class KookListener {
             redisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId, user_id);
             stringRedisTemplate.opsForValue().set(KookCommandMatchType.HELP.name() + "::" + channelId + "::FLAG", msg_id);
             String key = KookCommandMatchType.HELP.name() + "::" + channelId + "::MESSAGE_ID_LIST";
+            redisTemplate.delete(key);
             redisTemplate.opsForSet().add(key, ArrayUtil.toArray(msg_id_list, String.class));
         }
     }
