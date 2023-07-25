@@ -734,14 +734,17 @@ public class KookListener {
                 Set<Object> messageIdList = redisTemplate
                     .opsForSet()
                     .members(KookCommandMatchType.HELP.name() + "::" + channel_id + "::MESSAGE_ID_LIST");
-                messageIdList.forEach(msgId -> {
-                    directMessageService
-                        .postDirectMessageUpdate(
-                            Map.of("msg_id", msgId, "content", KookCommandMatchType.HELP.getContentTemplate().get("HELP_MESSAGE"))
-                        )
-                        .doOnSuccess(log::info)
-                        .block();
-                });
+                messageIdList
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .forEach(msgId -> {
+                        directMessageService
+                            .postDirectMessageUpdate(
+                                Map.of("msg_id", msgId, "content", KookCommandMatchType.HELP.getContentTemplate().get("HELP_MESSAGE"))
+                            )
+                            .doOnSuccess(log::info)
+                            .block();
+                    });
             }
         }
 
