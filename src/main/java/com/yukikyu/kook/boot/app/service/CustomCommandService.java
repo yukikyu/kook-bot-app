@@ -30,7 +30,7 @@ public class CustomCommandService {
     public List<String> getCommand(KookCommandMatchType kookCommandMatchType) {
         Set<Object> commandSet = redisTemplate
             .opsForSet()
-            .members(LocalContexts.getGuildId() + "::COMMAND::" + kookCommandMatchType.name());
+            .members(LocalContexts.contextsThreadLocal.get().getGuildId() + "::COMMAND::" + kookCommandMatchType.name());
         if (commandSet == null || CollectionUtil.isEmpty(commandSet)) {
             return null;
         }
@@ -45,6 +45,8 @@ public class CustomCommandService {
      * @return
      */
     public void setCommand(KookCommandMatchType kookCommandMatchType, String... commands) {
-        redisTemplate.opsForSet().add(LocalContexts.getGuildId() + "::COMMAND::" + kookCommandMatchType.name(), commands);
+        redisTemplate
+            .opsForSet()
+            .add(LocalContexts.contextsThreadLocal.get().getGuildId() + "::COMMAND::" + kookCommandMatchType.name(), commands);
     }
 }

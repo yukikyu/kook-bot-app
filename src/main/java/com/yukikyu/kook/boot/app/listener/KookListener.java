@@ -120,7 +120,7 @@ public class KookListener {
         final var guild_id = metaData.getByPath("d.extra.guild_id", String.class);
 
         // 将服务器信息存入上下文
-        LocalContexts.setGuildId(guild_id);
+        LocalContexts.contextsThreadLocal.get().setGuildId(guild_id);
 
         log.info("\n\n\n{}\n\n\n", metaData);
 
@@ -131,7 +131,7 @@ public class KookListener {
         final var bot = data.getByPath("extra.author.bot", boolean.class);
         final var chat_channel_id = data.getByPath("target_id", String.class);
         final var msgId = data.getByPath("msg_id", String.class);
-        LocalContexts.setChatChannelId(chat_channel_id);
+        LocalContexts.contextsThreadLocal.get().setChatChannelId(chat_channel_id);
         log.info("消息内容：{}", data);
 
         // 帮助频道KEY
@@ -144,7 +144,7 @@ public class KookListener {
         String HELP_ROLE_ID_KEY = guild_id + "::" + KookBotSettingType.HELP_ROLE_ID.name();
 
         // 回复
-        List<MessageRequest> messageRequestList = new ArrayList<>();
+        List<MessageRequest> messageRequestList = LocalContexts.contextsThreadLocal.get().getMessageRequestList();
 
         String guildViewBlock = guildService.getGuildView(Map.of("guild_id", guild_id)).doOnSuccess(log::info).block();
 
@@ -154,7 +154,7 @@ public class KookListener {
         if (ObjectUtil.equals(guildInfo.getData().getUserId(), author_id)) {
             // 设置自定义指令
             if (kookCommandMatch.execute(KookCommandMatchType.SET_CUSTOM_COMMAND, content)) {
-                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
+                String channel = StrUtil.removeAll(content, LocalContexts.contextsThreadLocal.get().getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -176,7 +176,7 @@ public class KookListener {
             }
             // 设置帮助角色ID
             if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_ROLE_ID, content)) {
-                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
+                String channel = StrUtil.removeAll(content, LocalContexts.contextsThreadLocal.get().getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -190,7 +190,7 @@ public class KookListener {
             }
             // 设置帮助频道
             if (kookCommandMatch.execute(KookCommandMatchType.SET_HELP_CHANNEL_ID, content)) {
-                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
+                String channel = StrUtil.removeAll(content, LocalContexts.contextsThreadLocal.get().getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -200,7 +200,7 @@ public class KookListener {
             }
             // 设置组队频道
             else if (kookCommandMatch.execute(KookCommandMatchType.SET_FORM_A_TEAM_CHANNEL_ID, content)) {
-                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
+                String channel = StrUtil.removeAll(content, LocalContexts.contextsThreadLocal.get().getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -210,7 +210,7 @@ public class KookListener {
             }
             // 设置组队统一通知频道
             else if (kookCommandMatch.execute(KookCommandMatchType.SET_FORM_A_TEAM_UNIFY_NOTIFY_CHANNEL_ID, content)) {
-                String channel = StrUtil.removeAll(content, LocalContexts.getCommand());
+                String channel = StrUtil.removeAll(content, LocalContexts.contextsThreadLocal.get().getCommand());
                 if (StrUtil.isBlank(channel)) {
                     return;
                 }
@@ -326,13 +326,30 @@ public class KookListener {
             List<Channel> joinedChannel = kookChannelUserService.getJoinedChannel(guild_id, author_id);
             // 组队指令
             if (kookCommandMatch.execute(KookCommandMatchType.FORM_A_TEAM, content)) {
+                // 未加入语音频道
                 if (ObjectUtil.isEmpty(joinedChannel)) {
+                    String messageContent = StrUtil.format(" (met){}(met) 未加入语音频道，该组队未生效，请加入语音频道后重试。", author_id);
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
+                    log.info("未加入语音频道");
                     return;
                 }
                 final String channel_id;
                 if (joinedChannel != null) {
                     channel_id = joinedChannel.get(0).getId();
                 } else {
+                    String messageContent = StrUtil.format(" (met){}(met) 未加入语音频道，该组队未生效，请加入语音频道后重试。", author_id);
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
+                    log.info("未加入语音频道");
                     return;
                 }
 
@@ -340,7 +357,7 @@ public class KookListener {
                 String formATeamChannelId = stringRedisTemplate.opsForValue().get(FORM_A_TEAM_CHANNEL_ID_KEY);
                 if (StrUtil.isNotEmpty(formATeamChannelId) && ObjectUtil.notEqual(formATeamChannelId, chat_channel_id)) {
                     String messageContent = StrUtil.format(
-                        "(met){}(met)，该频道不是指定组队频道，请移步至 (chn){}(chn) 频道发送组队信息。",
+                        " (met){}(met) 该频道不是指定组队频道，请移步至 (chn){}(chn) 频道发送组队信息。",
                         author_id,
                         formATeamChannelId
                     );
@@ -357,6 +374,14 @@ public class KookListener {
                 // {"code":0,"message":"操作成功","data":{"url":"https://kook.top/G9ivRG","url_code":"G9ivRG"}}
                 Invite invite = createInvite(channel_id);
                 if (invite == null) {
+                    String messageContent = StrUtil.format(" (met){}(met) 邀请创建失败，请重试。", author_id);
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
+                    log.info("邀请创建失败，请重试");
                     return;
                 }
                 // {"s":0,"d":{"channel_type":"GROUP","type":9,"target_id":"3163216254858192","author_id":"2431192162","content":"333","extra":{"type":9,"code":"","guild_id":"7363287837020870","channel_name":"\u6d4b\u8bd5","author":{"id":"2431192162","username":"\u96ea\u7403\u4e36","identify_num":"9841","online":true,"os":"Websocket","status":1,"avatar":"https:\/\/img.kookapp.cn\/avatars\/2022-05\/4cdLRdZGbB07y07y.jpg?x-oss-process=style\/icon","vip_avatar":"https:\/\/img.kookapp.cn\/avatars\/2022-05\/4cdLRdZGbB07y07y.jpg?x-oss-process=style\/icon","banner.txt":"","nickname":"\u96ea\u7403\u4e36","roles":[],"is_vip":false,"is_ai_reduce_noise":true,"is_personal_card_bg":false,"bot":false,"decorations_id_map":null,"is_sys":false},"visible_only":null,"mention":[],"mention_all":false,"mention_roles":[],"mention_here":false,"nav_channels":[],"kmarkdown":{"raw_content":"333","mention_part":[],"mention_role_part":[],"channel_part":[]},"emoji":[],"last_msg_content":"\u96ea\u7403\u4e36\uff1a333","send_msg_device":1},"msg_id":"c285800b-e782-42b0-89cb-854208130b6f","msg_timestamp":1687969072819,"nonce":"2dJSaKesSdC1VtwSICzNvTi1","from_type":1},"extra":{"verifyToken":"4BnfeTACRFDr_mKQ","encryptKey":"Pq2sDV7oq","callbackUrl":""},"sn":1}
@@ -403,13 +428,21 @@ public class KookListener {
             // 帮助指令
             else if (kookCommandMatch.execute(KookCommandMatchType.HELP, content)) {
                 if (ObjectUtil.isEmpty(joinedChannel)) {
+                    String messageContent = StrUtil.format(" (met){}(met) 未加入语音频道，该求助未生效，请加入语音频道后重试。", author_id);
+                    MessageRequest messageRequest = new MessageRequest();
+                    messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
+                    messageRequest.setTargetId(chat_channel_id);
+                    messageRequest.setQuote(msgId);
+                    messageRequest.setContent(messageContent);
+                    messageRequestList.add(messageRequest);
+                    log.info("未加入语音频道");
                     return;
                 }
                 // 指定帮助频道
                 String helpChannelId = stringRedisTemplate.opsForValue().get(HELP_CHANNEL_ID_KEY);
                 if (StrUtil.isNotEmpty(helpChannelId) && ObjectUtil.notEqual(helpChannelId, chat_channel_id)) {
                     String messageContent = StrUtil.format(
-                        "(met){}(met)，该频道不是指定求助频道，请移步至 (chn){}(chn) 频道发送求助信息。",
+                        " (met){}(met) 该频道不是指定求助频道，请移步至 (chn){}(chn) 频道发送求助信息。",
                         author_id,
                         helpChannelId
                     );
@@ -425,7 +458,7 @@ public class KookListener {
 
                 // 必须在语音频道
                 if (joinedChannel == null) {
-                    String messageContent = StrUtil.format("(met){}(met)，未加入语音频道，该求助未生效，请加入语音频道后重试。", author_id);
+                    String messageContent = StrUtil.format(" (met){}(met) 未加入语音频道，该求助未生效，请加入语音频道后重试。", author_id);
                     MessageRequest messageRequest = new MessageRequest();
                     messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
                     messageRequest.setTargetId(chat_channel_id);
@@ -563,14 +596,6 @@ public class KookListener {
                 messageRequest.setContent(messageContent);
                 messageRequestList.add(messageRequest);
             }
-        }
-
-        // 发送消息
-        if (CollectionUtil.isNotEmpty(messageRequestList)) {
-            messageRequestList.forEach(messageRequest -> {
-                Map<String, Object> stringObjectMap = BeanUtil.beanToMap(messageRequest, true, true);
-                messageService.postMessageCreate(stringObjectMap).doOnSuccess(log::info).block();
-            });
         }
     }
 

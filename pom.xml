@@ -6,7 +6,7 @@
 
     <groupId>com.yukikyu.kook.boot.app</groupId>
     <artifactId>kook-bot-app</artifactId>
-    <version>1.3.2-RELEASE</version>
+    <version>1.3.3-RELEASE</version>
     <packaging>jar</packaging>
     <name>Kook Bot App</name>
     <description>Description for Kook Bot App</description>

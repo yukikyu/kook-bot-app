@@ -32,7 +32,7 @@ public class KookCommandMatchImpl implements KookCommandMatch {
         }
         commandList.forEach(command -> {
             if (StrUtil.contains(content, command)) {
-                LocalContexts.setCommand(command);
+                LocalContexts.contextsThreadLocal.get().setCommand(command);
                 flag[0] = true;
             }
         });

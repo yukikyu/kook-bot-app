@@ -23,7 +23,7 @@ public class MessageRequestFactory {
      */
     public static MessageRequest success(String quote, String tempTargetId) {
         MessageRequest messageRequest = new MessageRequest();
-        messageRequest.setTargetId(LocalContexts.getChatChannelId());
+        messageRequest.setTargetId(LocalContexts.contextsThreadLocal.get().getChatChannelId());
         messageRequest.setContent("成功");
         messageRequest.setType(KookMessageType.KMARKDOWN.getValue());
         messageRequest.setQuote(quote);
