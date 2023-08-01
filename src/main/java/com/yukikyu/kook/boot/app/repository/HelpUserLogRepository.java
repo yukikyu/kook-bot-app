@@ -33,11 +33,14 @@ public interface HelpUserLogRepository extends ReactiveCrudRepository<HelpUserLo
     Flux<HelpUserLog> findByChannelIdAndStatus(String channelId, String name);
 
     @Modifying
-    @Query("update kb_help_user_log hul set hul.status = :status, hul.exit_at = :exitAt where hul.help_user_id = :helpUserId")
-    Mono<Void> updateStatusAndExitAtByHelpUserId(
-        @Param("status") String status,
+    @Query(
+        "update kb_help_user_log hul set hul.status = :updateStatus, hul.exit_at = :exitAt where hul.help_user_id = :helpUserId and hul.status = :status"
+    )
+    Mono<Void> updateStatusAndExitAtByHelpUserIdAndStatus(
+        @Param("updateStatus") String updateStatus,
         @Param("exitAt") Instant exitAt,
-        @Param("helpUserId") String helpUserId
+        @Param("helpUserId") String helpUserId,
+        @Param("status") String status
     );
 
     Flux<HelpUserLog> findByStatus(String status);

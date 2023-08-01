@@ -823,7 +823,14 @@ public class KookListener {
                     return;
                 }
 
-                helpUserLogRepository.updateStatusAndExitAtByHelpUserId(HelpLogStatus.ENDED.name(), Instant.now(), helpUserId).block();
+                helpUserLogRepository
+                    .updateStatusAndExitAtByHelpUserIdAndStatus(
+                        HelpLogStatus.ENDED.name(),
+                        Instant.now(),
+                        helpUserId,
+                        HelpLogStatus.STARTING.name()
+                    )
+                    .block();
 
                 // 删除标记
                 redisTemplate.delete(key + "*");
